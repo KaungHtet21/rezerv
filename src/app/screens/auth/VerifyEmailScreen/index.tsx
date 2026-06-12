@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { CScreen } from '~app/common';
@@ -8,12 +8,11 @@ import {
 	AuthScreenHeader,
 	AuthTitleWithBrand,
 } from '../components';
-import LoginForm from './LoginForm';
+import VerifyEmailForm from './VerifyEmailForm';
 
-const LoginScreen = () => {
+const VerifyEmailScreen = () => {
 	const route = useRoute<any>();
-	const prefillEmail = route?.params?.prefillEmail || '';
-	const [, setCurrentEmail] = useState(prefillEmail);
+	const email = route?.params?.email || '';
 
 	return (
 		<CScreen
@@ -22,24 +21,21 @@ const LoginScreen = () => {
 			contentContainerStyle={styles.scrollContent}
 			footer={
 				<AuthFooterWithLink
-					message="Don't have an account?"
-					linkText="Sign up"
-					navigateTo="RegisterScreen"
+					message="Already verified?"
+					linkText="Log in"
+					navigateTo="LoginScreen"
 				/>
 			}>
 			<AuthScreenHeader />
 			<View style={styles.content}>
-				<AuthTitleWithBrand prefix="Welcome back to" />
-				<LoginForm
-					prefillEmail={prefillEmail}
-					onEmailChange={setCurrentEmail}
-				/>
+				<AuthTitleWithBrand prefix="Verify your" suffix="email" />
+				<VerifyEmailForm email={email} />
 			</View>
 		</CScreen>
 	);
 };
 
-export default LoginScreen;
+export default VerifyEmailScreen;
 
 const styles = StyleSheet.create({
 	scrollContent: {

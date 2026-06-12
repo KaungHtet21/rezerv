@@ -1,29 +1,89 @@
-import { API_SERVICE } from '../restApi';
-import { API } from '~constants/api';
+import type { AuthUser } from '~core/store/slices/userSlice';
 
-export type AuthResponse = {
-	success: boolean;
-	message?: string;
-	access_token?: string;
-	user?: {
-		_id: string;
-		email: string;
-		name?: string;
-	};
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+export type UserStatus = 'PENDING' | 'APPROVED';
+
+export type SafeUser = {
+	id: string;
+	email: string;
+	phone: string;
+	name: string;
+	profilePic: string | null;
+	gender: Gender;
+	dob: string;
+	country: string;
+	address: string;
+	status: UserStatus;
+	createdAt: string;
+	updatedAt: string;
 };
 
-export const loginRequest = async (payload: {
+export type SignInPayload = {
 	email: string;
 	password: string;
-}): Promise<AuthResponse> => {
-	const res = await API_SERVICE.post(API.AUTH.LOGIN, payload);
-	return res.data;
 };
 
-export const registerRequest = async (payload: {
+export type SignUpPayload = {
 	email: string;
+	phone: string;
+	name: string;
+	profilePic?: string;
+	gender: Gender;
+	dob: string;
+	country: string;
+	address: string;
 	password: string;
-}): Promise<AuthResponse> => {
-	const res = await API_SERVICE.post(API.AUTH.REGISTER, payload);
-	return res.data;
+};
+
+export type VerifyEmailPayload = {
+	email: string;
+	code: string;
+};
+
+export type ResendVerificationPayload = {
+	email: string;
+};
+
+export type SignInResponse = {
+	accessToken: string;
+	user: SafeUser;
+};
+
+export type SignUpResponse = {
+	message: string;
+	user: SafeUser;
+};
+
+export type VerifyEmailResponse = {
+	message: string;
+	user: SafeUser;
+};
+
+export type ResendVerificationResponse = {
+	message: string;
+	sendsRemaining: number;
+};
+
+export const GENDERS: Gender[] = [
+	'MALE',
+	'FEMALE',
+	'OTHER',
+	'PREFER_NOT_TO_SAY',
+];
+
+export const toAuthUser = (user: SafeUser): AuthUser => ({
+	_id: user.id,
+	email: user.email,
+	name: user.name,
+});
+
+export const getApiErrorMessage = (error: any, fallback: string): string => {
+	const message = error?.response?.data?.message;
+	if (Array.isArray(message)) {
+		return message.join(', ');
+	}
+	if (typeof message === 'string') {
+		return message;
+	}
+	return error?.message || fallback;
 };

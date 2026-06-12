@@ -1,18 +1,24 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, View, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { CInput, CButton, IconComp } from '~app/common';
 import { spacing, useColors } from '~core/design';
 import { validateEmail, validatePassword } from '~core/utils/validation';
-import { registerRequest } from '~core/server/apis/auth';
-import { useAppDispatch } from '~core/store/hooks';
-import { loginData } from '~core/store/slices/userSlice';
+import { useSignUp } from '~core/server/api-fetch';
+import { GENDERS, getApiErrorMessage, type Gender } from '~core/server/apis/auth';
 
 const DEBOUNCE_MS = 800;
 
 const RegisterForm = () => {
-	const dispatch = useAppDispatch();
+	const navigation = useNavigation<any>();
 	const colors = useColors();
+	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
+	const [phone, setPhone] = useState('');
+	const [gender, setGender] = useState('PREFER_NOT_TO_SAY');
+	const [dob, setDob] = useState('');
+	const [country, setCountry] = useState('');
+	const [address, setAddress] = useState('');
 	const [emailError, setEmailError] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,7 +26,6 @@ const RegisterForm = () => {
 	const [confirmPasswordError, setConfirmPasswordError] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-	const [loading, setLoading] = useState(false);
 
 	const emailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const passwordTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,7 +33,33 @@ const RegisterForm = () => {
 	const passwordRef = useRef(password);
 	const confirmRef = useRef(confirmPassword);
 
-	const isDisabled = !email || !password || !confirmPassword || loading;
+	const { mutate: signUp, isLoading } = useSignUp({
+		onSuccess: data => {
+			Alert.alert('Account created', data.message, [
+				{
+					text: 'Verify email',
+					onPress: () =>
+						navigation.navigate('VerifyEmailScreen', {
+							email: email.trim().toLowerCase(),
+						}),
+				},
+			]);
+		},
+		onError: error => {
+			Alert.alert(getApiErrorMessage(error, 'Registration failed. Try again.'));
+		},
+	});
+
+	const isDisabled =
+		!name ||
+		!email ||
+		!phone ||
+		!dob ||
+		!country ||
+		!address ||
+		!password ||
+		!confirmPassword ||
+		isLoading;
 
 	const handleEmailChange = useCallback(
 		(value: string) => {
@@ -76,7 +107,7 @@ const RegisterForm = () => {
 		[confirmPasswordError],
 	);
 
-	const handleRegister = async () => {
+	const handleRegister = () => {
 		const emailValidation = validateEmail(email);
 		if (!emailValidation.isValid) {
 			setEmailError(emailValidation.errorMessage);
@@ -97,40 +128,37 @@ const RegisterForm = () => {
 		}
 		setConfirmPasswordError('');
 
-		const trimmedEmail = email.trim().toLowerCase();
-
-		try {
-			setLoading(true);
-			const response = await registerRequest({
-				email: trimmedEmail,
-				password,
-			});
-
-			if (response?.success && response.access_token && response.user) {
-				dispatch(
-					loginData({
-						access_token: response.access_token,
-						user: response.user,
-					}),
-				);
-				return;
-			}
-
-			Alert.alert(response?.message || 'Registration failed');
-		} catch (error: any) {
-			const msg =
-				error?.response?.data?.message ||
-				error?.message ||
-				'Registration failed. Check your connection and try again.';
-			Alert.alert(msg);
-		} finally {
-			setLoading(false);
+		const normalizedGender = gender.trim().toUpperCase() as Gender;
+		if (!GENDERS.includes(normalizedGender)) {
+			Alert.alert(
+				'Invalid gender',
+				'Use one of: MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY',
+			);
+			return;
 		}
+
+		signUp({
+			email: email.trim().toLowerCase(),
+			phone: phone.trim(),
+			name: name.trim(),
+			gender: normalizedGender,
+			dob: dob.trim(),
+			country: country.trim(),
+			address: address.trim(),
+			password,
+		});
 	};
 
 	return (
 		<>
 			<View style={{ width: '100%', marginBottom: spacing.xxl }}>
+				<CInput
+					value={name}
+					onChangeText={setName}
+					label="Full name"
+					placeholder="Jane Doe"
+					autoCapitalize="words"
+				/>
 				<CInput
 					value={email}
 					onChangeText={handleEmailChange}
@@ -140,6 +168,41 @@ const RegisterForm = () => {
 					keyboardType="email-address"
 					autoCapitalize="none"
 					autoCorrect={false}
+				/>
+				<CInput
+					value={phone}
+					onChangeText={setPhone}
+					label="Phone"
+					placeholder="+15551234567"
+					keyboardType="phone-pad"
+				/>
+				<CInput
+					value={gender}
+					onChangeText={setGender}
+					label="Gender"
+					placeholder="MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY"
+					autoCapitalize="characters"
+				/>
+				<CInput
+					value={dob}
+					onChangeText={setDob}
+					label="Date of birth"
+					placeholder="1995-06-15"
+					autoCapitalize="none"
+				/>
+				<CInput
+					value={country}
+					onChangeText={setCountry}
+					label="Country"
+					placeholder="United States"
+					autoCapitalize="words"
+				/>
+				<CInput
+					value={address}
+					onChangeText={setAddress}
+					label="Address"
+					placeholder="123 Main St, Springfield"
+					autoCapitalize="words"
 				/>
 				<CInput
 					value={password}
@@ -188,7 +251,7 @@ const RegisterForm = () => {
 				title="Create account"
 				onPress={handleRegister}
 				disabled={isDisabled}
-				loading={loading}
+				loading={isLoading}
 				size="lg"
 			/>
 		</>

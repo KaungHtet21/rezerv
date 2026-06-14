@@ -4,10 +4,7 @@ import { CButton, CInput, CText } from '~shared/presentation/ui';
 import { spacing, useColors } from '~shared/presentation/design';
 import { getApiErrorMessage } from '~shared/domain/errors';
 import type { BookingNote } from '~domains/scheduling/domain';
-import {
-	useDeleteBookingNote,
-	useUpdateBookingNote,
-} from '~domains/scheduling/application/bookingMutations';
+import { useUpdateBookingNote } from '~domains/scheduling/application/bookingMutations';
 
 type NoteItem = Pick<BookingNote, 'id' | 'content' | 'createdAt' | 'updatedAt'>;
 
@@ -15,24 +12,22 @@ type NoteListItemProps = {
 	item: NoteItem;
 	classId: string;
 	bookingId: string;
-	onDeleteSuccess: (noteId: string, content: string) => void;
+	onDelete: (noteId: string, content: string) => void;
+	isDeleting?: boolean;
 };
 
 const NoteListItem = ({
 	item,
 	classId,
 	bookingId,
-	onDeleteSuccess,
+	onDelete,
+	isDeleting = false,
 }: NoteListItemProps) => {
 	const colors = useColors();
 	const [isEditing, setIsEditing] = useState(false);
 	const [editText, setEditText] = useState('');
 
 	const { mutate: updateNote, isLoading: isUpdatingNote } = useUpdateBookingNote(
-		classId,
-		bookingId,
-	);
-	const { mutate: deleteNote, isLoading: isDeletingNote } = useDeleteBookingNote(
 		classId,
 		bookingId,
 	);
@@ -56,12 +51,7 @@ const NoteListItem = ({
 	};
 
 	const handleDelete = () => {
-		deleteNote(item.id, {
-			onSuccess: () => onDeleteSuccess(item.id, item.content),
-			onError: err => {
-				Alert.alert(getApiErrorMessage(err, 'Could not delete note.'));
-			},
-		});
+		onDelete(item.id, item.content);
 	};
 
 	const handleStartEdit = () => {
@@ -110,7 +100,7 @@ const NoteListItem = ({
 							size="sm"
 							variant="outline"
 							onPress={handleDelete}
-							loading={isDeletingNote}
+							loading={isDeleting}
 						/>
 					</View>
 				</>

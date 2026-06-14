@@ -35,10 +35,7 @@ const VerifyEmailForm = ({ email }: Props) => {
 	const { mutate: resendVerification, isLoading: isResending } =
 		useResendVerification({
 			onSuccess: data => {
-				Alert.alert(
-					'Code sent',
-					`${data.message}. ${data.sendsRemaining} resend(s) remaining.`,
-				);
+				Alert.alert('Verification code', data.message);
 			},
 			onError: error => {
 				Alert.alert(getApiErrorMessage(error, 'Could not resend code.'));
@@ -50,7 +47,7 @@ const VerifyEmailForm = ({ email }: Props) => {
 	const handleVerify = () => {
 		const trimmedCode = code.trim();
 		if (trimmedCode.length < 5 || trimmedCode.length > 6) {
-			setCodeError('Enter the verification code from your email');
+			setCodeError('Enter the 5-digit verification code (13456)');
 			return;
 		}
 		setCodeError('');
@@ -78,7 +75,7 @@ const VerifyEmailForm = ({ email }: Props) => {
 						if (codeError) setCodeError('');
 					}}
 					label="Verification code"
-					placeholder="123456"
+					placeholder="13456"
 					error={codeError}
 					keyboardType="number-pad"
 					maxLength={6}
@@ -93,7 +90,7 @@ const VerifyEmailForm = ({ email }: Props) => {
 			/>
 			<View style={{ marginTop: spacing.md }}>
 				<CButton
-					title="Resend code"
+					title="Show verification code"
 					onPress={handleResend}
 					disabled={isVerifying || isResending}
 					loading={isResending}

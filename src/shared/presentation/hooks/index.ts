@@ -1,2 +1,2 @@
 export * from "./network";
-export { useKeyboardFooterInset } from "./useKeyboardHeight";
+export { useKeyboardFooterInset, useKeyboardHeight } from "./ui/useKeyboardHeight";

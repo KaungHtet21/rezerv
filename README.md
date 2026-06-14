@@ -4,6 +4,8 @@ React Native (Expo) mobile app for studio staff to manage class attendance and p
 
 This submission demonstrates mobile engineering approach: architecture, state management, API integration, offline handling, and staff-focused UX.
 
+**Quick start:** Sign in with `staff@rezerv.local` / `password123`. If registering, use verification code `13456`.
+
 ---
 
 ## Table of contents
@@ -132,12 +134,20 @@ The app expects a REST API with JWT auth and endpoints for classes, bookings, at
 
 ## Demo credentials
 
+Use these to sign in and test the app without registering:
+
 | Field | Value |
 |-------|-------|
 | Email | `staff@rezerv.local` |
 | Password | `password123` |
 
-Registration and email verification screens are included; the demo account above is used for assessment login.
+If you register a new account, email verification uses a fixed demo code (no real email is sent):
+
+| Field | Value |
+|-------|-------|
+| Verification code | `13456` |
+
+The registration and verify-email screens are included for completeness; for assessment review, the staff login above is the fastest path.
 
 ---
 

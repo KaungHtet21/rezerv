@@ -1,7 +1,3 @@
-export const SERVER = {
-	API_URL: 'https://rezerv-api.onrender.com',
-};
-
 export const API = {
 	AUTH: {
 		SIGNIN: '/auth/signin',

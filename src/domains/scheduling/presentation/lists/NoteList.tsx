@@ -3,9 +3,8 @@ import {
 	FlatList,
 	RefreshControl,
 	StyleSheet,
-	View,
 } from 'react-native';
-import { CButton, CInput, CText } from '~shared/presentation/ui';
+import { CText } from '~shared/presentation/ui';
 import { NoteListItem } from '~domains/scheduling/presentation/entities';
 import { spacing, useColors } from '~shared/presentation/design';
 import type { BookingNote } from '~domains/scheduling/domain';
@@ -17,12 +16,10 @@ type NoteListProps = {
 	classId: string;
 	bookingId: string;
 	onRefresh: () => Promise<unknown>;
-	onDeleteSuccess: (noteId: string, content: string) => void;
-	noteText: string;
-	onNoteTextChange: (text: string) => void;
-	onAddNote: () => void;
-	isCreatingNote: boolean;
+	onDelete: (noteId: string, content: string) => void;
+	deletingNoteId?: string | null;
 	isFetching?: boolean;
+	contentPaddingBottom?: number;
 	ListEmptyComponent?: React.ReactElement;
 };
 
@@ -31,12 +28,10 @@ const NoteList = ({
 	classId,
 	bookingId,
 	onRefresh,
-	onDeleteSuccess,
-	noteText,
-	onNoteTextChange,
-	onAddNote,
-	isCreatingNote,
+	onDelete,
+	deletingNoteId = null,
 	isFetching = false,
+	contentPaddingBottom = spacing.md,
 	ListEmptyComponent,
 }: NoteListProps) => {
 	const colors = useColors();
@@ -61,41 +56,28 @@ const NoteList = ({
 					item={item}
 					classId={classId}
 					bookingId={bookingId}
-					onDeleteSuccess={onDeleteSuccess}
+					onDelete={onDelete}
+					isDeleting={deletingNoteId === item.id}
 				/>
 			)}
 			showsVerticalScrollIndicator={false}
-			contentContainerStyle={styles.content}
+			keyboardShouldPersistTaps="handled"
+			keyboardDismissMode="on-drag"
+			contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
 			refreshControl={
 				<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
 			}
 			ListEmptyComponent={ListEmptyComponent}
 			ListFooterComponent={
-				<View>
-					<CInput
-						value={noteText}
-						onChangeText={onNoteTextChange}
-						label="Add note"
-						placeholder="Add a private note"
-						multiline
-					/>
-					<CButton
-						title="Add note"
-						size="sm"
-						onPress={onAddNote}
-						disabled={!noteText.trim()}
-						loading={isCreatingNote}
-					/>
-					{isFetching ? (
-						<CText
-							variant="caption"
-							color={colors.placeholder}
-							align="center"
-							style={styles.footer}>
-							Refreshing...
-						</CText>
-					) : null}
-				</View>
+				isFetching ? (
+					<CText
+						variant="caption"
+						color={colors.placeholder}
+						align="center"
+						style={styles.footer}>
+						Refreshing...
+					</CText>
+				) : null
 			}
 		/>
 	);
@@ -109,7 +91,6 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		flexGrow: 1,
-		paddingBottom: spacing.xxxl,
 	},
 	footer: {
 		marginTop: spacing.md,

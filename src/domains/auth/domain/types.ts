@@ -43,5 +43,4 @@ export type VerifyEmailResponse = {
 
 export type ResendVerificationResponse = {
 	message: string;
-	sendsRemaining: number;
 };

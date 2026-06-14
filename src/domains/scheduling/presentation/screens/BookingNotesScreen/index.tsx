@@ -1,15 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import {
+	ActivityIndicator,
+	Alert,
+	KeyboardAvoidingView,
+	Platform,
+	StyleSheet,
+	View,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { CButton, CScreen, CText } from '~shared/presentation/ui';
+import { NoteComposer } from '~domains/scheduling/presentation/entities';
 import { NoteList } from '~domains/scheduling/presentation/lists';
-import { spacing, useColors } from '~shared/presentation/design';
+import { componentHeight, spacing, useColors } from '~shared/presentation/design';
+import { useKeyboardHeight } from '~shared/presentation/hooks';
 import type { ClassesStackParamList } from '~app/navigation/config/types';
 import { getApiErrorMessage } from '~shared/domain/errors';
 import {
 	useClassBookings,
 	useCreateBookingNote,
+	useDeleteBookingNote,
 	useRestoreBookingNote,
 } from '~domains/scheduling/application/bookingMutations';
 
@@ -29,11 +39,14 @@ const BookingNotesScreen = () => {
 		useClassBookings(classId);
 	const { mutate: createNote, isLoading: isCreatingNote } =
 		useCreateBookingNote(classId, bookingId);
+	const { mutate: deleteNote } = useDeleteBookingNote(classId, bookingId);
 	const { mutate: restoreNote, isLoading: isRestoringNote } =
 		useRestoreBookingNote(classId);
 
+	const keyboardHeight = useKeyboardHeight();
 	const [noteText, setNoteText] = useState('');
 	const [undo, setUndo] = useState<UndoState | null>(null);
+	const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
 	const booking = useMemo(
 		() => data?.find(item => item.id === bookingId),
@@ -52,8 +65,16 @@ const BookingNotesScreen = () => {
 		});
 	};
 
-	const handleDeleteSuccess = (noteId: string, content: string) => {
+	const handleDeleteNote = (noteId: string, content: string) => {
 		setUndo({ noteId, content });
+		setDeletingNoteId(noteId);
+		deleteNote(noteId, {
+			onSettled: () => setDeletingNoteId(null),
+			onError: err => {
+				setUndo(null);
+				Alert.alert(getApiErrorMessage(err, 'Could not delete note.'));
+			},
+		});
 	};
 
 	const handleUndo = () => {
@@ -101,25 +122,66 @@ const BookingNotesScreen = () => {
 		}
 
 		return (
-			<NoteList
-				data={booking.notes}
-				classId={classId}
-				bookingId={bookingId}
-				onRefresh={refetch}
-				onDeleteSuccess={handleDeleteSuccess}
-				noteText={noteText}
-				onNoteTextChange={setNoteText}
-				onAddNote={handleAddNote}
-				isCreatingNote={isCreatingNote}
-				isFetching={isFetching && !isLoading}
-				ListEmptyComponent={
-					<View style={styles.centered}>
-						<CText variant="body" color={colors.placeholder} align="center">
-							No notes yet.
+			<>
+				<NoteList
+					data={booking.notes}
+					classId={classId}
+					bookingId={bookingId}
+					onRefresh={refetch}
+					onDelete={handleDeleteNote}
+					deletingNoteId={deletingNoteId}
+					isFetching={isFetching && !isLoading}
+					ListEmptyComponent={
+						<View style={styles.centered}>
+							<CText variant="body" color={colors.placeholder} align="center">
+								No notes yet.
+							</CText>
+						</View>
+					}
+				/>
+				{undo ? (
+					<View
+						style={[
+							styles.undoBar,
+							{
+								backgroundColor: colors.card,
+								borderColor: colors.border,
+							},
+						]}>
+						<CText variant="label" color={colors.title} style={styles.undoText}>
+							Note deleted
 						</CText>
+						<CButton
+							title="Undo"
+							size="sm"
+							variant="outline"
+							onPress={handleUndo}
+							loading={isRestoringNote}
+						/>
 					</View>
-				}
-			/>
+				) : null}
+				{Platform.OS === 'ios' ? (
+					<KeyboardAvoidingView
+						behavior="padding"
+						keyboardVerticalOffset={componentHeight.header}>
+						<NoteComposer
+							noteText={noteText}
+							onNoteTextChange={setNoteText}
+							onAddNote={handleAddNote}
+							isCreatingNote={isCreatingNote}
+						/>
+					</KeyboardAvoidingView>
+				) : (
+					<View style={{ marginBottom: keyboardHeight }}>
+						<NoteComposer
+							noteText={noteText}
+							onNoteTextChange={setNoteText}
+							onAddNote={handleAddNote}
+							isCreatingNote={isCreatingNote}
+						/>
+					</View>
+				)}
+			</>
 		);
 	};
 
@@ -129,29 +191,13 @@ const BookingNotesScreen = () => {
 			hasHeader
 			isTabScreen
 			headerTitle={attendeeName}
-			contentStyle={styles.container}
-			footer={
-				undo ? (
-					<View style={[styles.undoBar, { backgroundColor: colors.title }]}>
-						<CText variant="label" color="#FFFFFF" style={{ flex: 1 }}>
-							Note deleted
-						</CText>
-						<CButton
-							title="Undo"
-							size="sm"
-							variant="outline"
-							onPress={handleUndo}
-							loading={isRestoringNote}
-							style={styles.undoButton}
-							textStyle={{ color: '#FFFFFF' }}
-						/>
-					</View>
-				) : undefined
-			}>
+			contentStyle={styles.container}>
 			<CText variant="label" color={colors.placeholder} style={styles.subtitle}>
 				Private staff notes
 			</CText>
-			{renderContent()}
+			<View style={styles.content}>
+				{renderContent()}
+			</View>
 		</CScreen>
 	);
 };
@@ -166,6 +212,9 @@ const styles = StyleSheet.create({
 	subtitle: {
 		marginBottom: spacing.lg,
 	},
+	content: {
+		flex: 1,
+	},
 	centered: {
 		flex: 1,
 		minHeight: 120,
@@ -175,13 +224,14 @@ const styles = StyleSheet.create({
 	},
 	undoBar: {
 		borderRadius: 8,
+		borderWidth: 1,
 		padding: spacing.md,
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: spacing.md,
-		marginHorizontal: spacing.lg,
+		marginBottom: spacing.sm,
 	},
-	undoButton: {
-		borderColor: '#FFFFFF',
+	undoText: {
+		flex: 1,
 	},
 });

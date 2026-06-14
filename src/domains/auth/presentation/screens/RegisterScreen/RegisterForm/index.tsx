@@ -305,7 +305,7 @@ const RegisterForm = () => {
 				disabled={isDisabled}
 				loading={isLoading}
 				size="lg"
-				style={{ marginBottom: spacing.md }}
+				style={{ marginBottom: spacing.xxxl }}
 			/>
 			<CountryPickerModal
 				visible={countryPickerVisible}

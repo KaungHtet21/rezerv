@@ -1,10 +1,10 @@
 import axios from 'axios';
 import store from '~shared/infrastructure/state/store';
 import { userLogout } from '~shared/infrastructure/state/slices/userSlice';
-import { SERVER } from '~config/api';
+import { ENV } from '~config/env';
 
 const apiClient = axios.create({
-	baseURL: SERVER.API_URL,
+	baseURL: ENV.API_URL,
 	timeout: 30000,
 	headers: { 'Content-Type': 'application/json' },
 });

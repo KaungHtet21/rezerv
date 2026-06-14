@@ -60,32 +60,41 @@ This submission demonstrates mobile engineering approach: architecture, state ma
 
 ## Project structure
 
+Domain-driven hexagonal layout — each bounded context owns its domain, application, and presentation layers; shared cross-cutting concerns live in `shared/`.
+
 ```
 src/
-├── app/
-│   ├── screens/       # Screen-level UI (auth, classes, notes, profile)
-│   ├── list/          # FlatList wrappers (ClassList, BookingList, NoteList)
-│   ├── entities/      # List item components
-│   ├── common/        # Design-system primitives (CScreen, CButton, CText, …)
-│   ├── components/    # Shared UI (NetworkBanner, StatusButton, …)
-│   └── sheets/        # Bottom sheet pickers
-├── core/
-│   ├── design/        # Design tokens, theme hooks
-│   ├── navigation/    # Navigators & route types
-│   ├── offline/       # Mutation queue, sync engine, cache helpers
-│   ├── server/        # API hooks, query keys, axios client
-│   └── store/         # Redux slices + persist config
-└── constants/         # API paths, shared constants
+├── app/                          # Composition root
+│   ├── navigation/               # Navigators & route types
+│   └── providers/                # App-level providers (Redux, Query, theme)
+├── config/                       # API paths, shared constants
+├── domains/
+│   ├── auth/
+│   │   ├── domain/               # Entities, value objects (User, Gender, payloads)
+│   │   ├── application/          # Use-case hooks (sign in, sign up, mappers)
+│   │   └── presentation/         # Screens, auth sheets, components
+│   ├── scheduling/
+│   │   ├── domain/               # ClassSummary, Booking, BookingNote, BookingStatus
+│   │   ├── application/          # Query/mutation hooks (classes, attendance, notes)
+│   │   └── presentation/         # Screens, lists, entity rows, date picker
+│   └── profile/
+│       └── presentation/         # Profile screen
+└── shared/
+    ├── domain/                   # Cross-cutting domain helpers (API errors)
+    ├── infrastructure/           # Adapters (HTTP, offline sync, Redux, storage)
+    └── presentation/             # Design system, shared UI, layouts, hooks
 ```
 
-### Layering
+### Hexagonal layers
 
-- **`screens/`** — composition, data fetching, navigation
-- **`list/`** — reusable lists with pull-to-refresh
-- **`entities/`** — memoized row components
-- **`common/`** — shared UI building blocks
+| Layer | Role | Examples |
+|-------|------|----------|
+| **Domain** | Pure business types & rules, no framework deps | `BookingStatus`, `SafeUser`, `ClassSummary` |
+| **Application** | Orchestrates use cases via ports/adapters | `useSignIn`, `useUpdateBookingStatus` |
+| **Infrastructure** | External adapters (API, persistence, offline) | Axios client, Redux store, sync engine |
+| **Presentation** | UI that calls application layer | Screens, lists, design-system primitives |
 
-Screens stay thin; list scrolling and refresh behavior live in one place.
+Dependency direction flows inward: presentation → application → domain. Infrastructure implements ports consumed by application hooks.
 
 ---
 
@@ -109,7 +118,7 @@ yarn android   # Android emulator
 
 ## Configuration
 
-Set the API base URL in `src/constants/api.ts`:
+Set the API base URL in `src/config/api.ts`:
 
 ```ts
 export const SERVER = {
@@ -135,20 +144,25 @@ Registration and email verification screens are included; the demo account above
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      UI Layer                           │
-│  Screens → Lists → Entity items → Common components     │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────┐
-│                   Data / State Layer                    │
-│  React Query (server cache)  +  Redux (client state)    │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-         ┌────────────────┼────────────────┐
-         ▼                ▼                ▼
-   REST API         AsyncStorage      NetInfo
-                    (Redux Persist)   (connectivity)
+┌──────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                        │
+│  Domain screens → lists → shared UI (design system)          │
+└────────────────────────────┬─────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────┐
+│                   Application Layer                          │
+│  Use-case hooks (React Query mutations/queries per domain) │
+└────────────────────────────┬─────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────┐
+│                      Domain Layer                            │
+│  Entities & value objects (auth, scheduling)                 │
+└────────────────────────────┬─────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────┐
+│                  Infrastructure (Adapters)                     │
+│  REST API · AsyncStorage · NetInfo · offline sync queue      │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Navigation
@@ -192,12 +206,12 @@ Mutations apply **optimistic updates** first. On success, queries are invalidate
 
 ## API integration & caching
 
-Shared hooks in `src/core/server/api-fetch.ts`:
+Shared hooks in `src/shared/infrastructure/api/api-fetch.ts`:
 
 - `useApiQuery` — GET with cache keys
 - `useApiCreate` / `useApiUpdate` / `useApiDelete` — mutations with invalidation
 
-Domain hooks in `src/core/server/mutations/` cover auth, classes, bookings, and notes.
+Domain hooks live under each bounded context — e.g. `src/domains/auth/application/` and `src/domains/scheduling/application/`.
 
 **Caching**
 

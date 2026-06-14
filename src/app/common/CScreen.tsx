@@ -70,7 +70,7 @@ const CScreen: React.FC<CScreenProps> = ({
 	const navigation = useNavigation<any>();
 	const insets = useSafeAreaInsets();
 	const bottomInset = isTabScreen ? 0 : insets.bottom;
-	const footerBottom = useKeyboardFooterInset(bottomInset);
+	const footerBottom = useKeyboardFooterInset(0);
 	const [refreshing, setRefreshing] = React.useState(false);
 	const [footerHeight, setFooterHeight] = React.useState(0);
 
@@ -102,7 +102,7 @@ const CScreen: React.FC<CScreenProps> = ({
 
 	const showInlineBack = canGoBack && !hasHeader;
 
-	const scrollBottomPadding = footer ? footerHeight + spacing.md : 0;
+	const scrollBottomPadding = footer ? footerHeight + spacing.lg : 0;
 
 	const content = isScroll ? (
 		<ScrollView
@@ -187,7 +187,10 @@ const CScreen: React.FC<CScreenProps> = ({
 						}}
 						style={[
 							styles.footer,
-							!isFull && { paddingHorizontal: spacing.lg },
+							{
+								backgroundColor: colors.background,
+								paddingBottom: bottomInset,
+							},
 							footerAnimatedStyle,
 							footerStyle,
 						]}>
@@ -206,9 +209,13 @@ const CScreen: React.FC<CScreenProps> = ({
 		body
 	);
 
-	const safeAreaEdges = footer
-		? edges.filter(edge => edge !== 'bottom')
-		: edges;
+	const safeAreaEdges = React.useMemo(() => {
+		let resolved = edges;
+		if (footer || isTabScreen) {
+			resolved = resolved.filter(edge => edge !== 'bottom');
+		}
+		return resolved;
+	}, [edges, footer, isTabScreen]);
 
 	return (
 		<CBackground edges={safeAreaEdges} statusBarStyle={statusBarStyle}>

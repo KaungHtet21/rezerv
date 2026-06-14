@@ -3,7 +3,7 @@ import { Alert, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CInput, CButton } from '~app/common';
 import { spacing } from '~core/design';
-import { useResendVerification, useVerifyEmail } from '~core/server/api-fetch';
+import { useResendVerification, useVerifyEmail } from '~core/server/mutations/auth';
 import { getApiErrorMessage } from '~core/server/apis/auth';
 
 type Props = {

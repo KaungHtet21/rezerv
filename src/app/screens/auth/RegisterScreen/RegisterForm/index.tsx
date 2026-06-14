@@ -1,23 +1,38 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, View, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { CInput, CButton, IconComp } from '~app/common';
+import { CInput, CButton, CDropdownInput, IconComp } from '~app/common';
+import { GenderOption, GENDER_OPTIONS } from '~constants/gender';
+import { useGlobalBottomSheet } from '~app/layouts';
+import {
+	CountryPickerModal,
+	DEFAULT_COUNTRY_CODE,
+	GenderPickerSheet,
+	DateOfBirthPickerSheet,
+	getCountryName,
+	type CountryCode,
+} from '~app/sheets';
 import { spacing, useColors } from '~core/design';
+import { formatDateLabel } from '~core/utils/date';
 import { validateEmail, validatePassword } from '~core/utils/validation';
-import { useSignUp } from '~core/server/api-fetch';
-import { GENDERS, getApiErrorMessage, type Gender } from '~core/server/apis/auth';
+import { useSignUp } from '~core/server/mutations/auth';
+import { getApiErrorMessage, type Gender } from '~core/server/apis/auth';
 
 const DEBOUNCE_MS = 800;
 
 const RegisterForm = () => {
 	const navigation = useNavigation<any>();
 	const colors = useColors();
+	const { openSheet, closeSheet } = useGlobalBottomSheet();
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [phone, setPhone] = useState('');
-	const [gender, setGender] = useState('PREFER_NOT_TO_SAY');
+	const [gender, setGender] = useState<GenderOption>(GenderOption.PREFER_NOT_TO_SAY);
 	const [dob, setDob] = useState('');
 	const [country, setCountry] = useState('');
+	const [countryCode, setCountryCode] =
+		useState<CountryCode>(DEFAULT_COUNTRY_CODE);
+	const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 	const [address, setAddress] = useState('');
 	const [emailError, setEmailError] = useState('');
 	const [password, setPassword] = useState('');
@@ -107,6 +122,50 @@ const RegisterForm = () => {
 		[confirmPasswordError],
 	);
 
+	const selectedGender = useMemo(
+		() => GENDER_OPTIONS.find(option => option.value === gender),
+		[gender],
+	);
+
+	const selectedDob = useMemo(
+		() => (dob ? { label: formatDateLabel(dob) } : undefined),
+		[dob],
+	);
+
+	const selectedCountry = useMemo(
+		() => (country ? { label: country } : undefined),
+		[country],
+	);
+
+	const handleOpenGenderSheet = useCallback(() => {
+		openSheet(
+			<GenderPickerSheet
+				selected={gender}
+				onSelect={(value: GenderOption) => {
+					setGender(value);
+					closeSheet();
+				}}
+			/>,
+		);
+	}, [closeSheet, gender, openSheet]);
+
+	const handleOpenDobSheet = useCallback(() => {
+		openSheet(
+			<DateOfBirthPickerSheet
+				value={dob}
+				onConfirm={(value: string) => {
+					setDob(value);
+					closeSheet();
+				}}
+			/>,
+			{ snapPoint: '45%' },
+		);
+	}, [closeSheet, dob, openSheet]);
+
+	const handleOpenCountryPicker = useCallback(() => {
+		setCountryPickerVisible(true);
+	}, []);
+
 	const handleRegister = () => {
 		const emailValidation = validateEmail(email);
 		if (!emailValidation.isValid) {
@@ -128,20 +187,11 @@ const RegisterForm = () => {
 		}
 		setConfirmPasswordError('');
 
-		const normalizedGender = gender.trim().toUpperCase() as Gender;
-		if (!GENDERS.includes(normalizedGender)) {
-			Alert.alert(
-				'Invalid gender',
-				'Use one of: MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY',
-			);
-			return;
-		}
-
 		signUp({
 			email: email.trim().toLowerCase(),
 			phone: phone.trim(),
 			name: name.trim(),
-			gender: normalizedGender,
+			gender: gender as Gender,
 			dob: dob.trim(),
 			country: country.trim(),
 			address: address.trim(),
@@ -176,26 +226,26 @@ const RegisterForm = () => {
 					placeholder="+15551234567"
 					keyboardType="phone-pad"
 				/>
-				<CInput
-					value={gender}
-					onChangeText={setGender}
+				<CDropdownInput
 					label="Gender"
-					placeholder="MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY"
-					autoCapitalize="characters"
+					placeholder="Select gender"
+					value={selectedGender}
+					valueKey="label"
+					onOpen={handleOpenGenderSheet}
 				/>
-				<CInput
-					value={dob}
-					onChangeText={setDob}
+				<CDropdownInput
 					label="Date of birth"
-					placeholder="1995-06-15"
-					autoCapitalize="none"
+					placeholder="Select date of birth"
+					value={selectedDob}
+					valueKey="label"
+					onOpen={handleOpenDobSheet}
 				/>
-				<CInput
-					value={country}
-					onChangeText={setCountry}
+				<CDropdownInput
 					label="Country"
-					placeholder="United States"
-					autoCapitalize="words"
+					placeholder="Select country"
+					value={selectedCountry}
+					valueKey="label"
+					onOpen={handleOpenCountryPicker}
 				/>
 				<CInput
 					value={address}
@@ -203,6 +253,7 @@ const RegisterForm = () => {
 					label="Address"
 					placeholder="123 Main St, Springfield"
 					autoCapitalize="words"
+					multiline
 				/>
 				<CInput
 					value={password}
@@ -253,6 +304,17 @@ const RegisterForm = () => {
 				disabled={isDisabled}
 				loading={isLoading}
 				size="lg"
+				style={{ marginBottom: spacing.md }}
+			/>
+			<CountryPickerModal
+				visible={countryPickerVisible}
+				countryCode={countryCode}
+				onSelect={selected => {
+					setCountryCode(selected.cca2);
+					setCountry(getCountryName(selected));
+					setCountryPickerVisible(false);
+				}}
+				onClose={() => setCountryPickerVisible(false)}
 			/>
 		</>
 	);

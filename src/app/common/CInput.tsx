@@ -18,6 +18,7 @@ const CInput: React.FC<CInputProps> = ({
 	containerStyle,
 	style,
 	rightAccessory,
+	multiline,
 	...props
 }) => {
 	const ds = useDesign();
@@ -39,10 +40,10 @@ const CInput: React.FC<CInputProps> = ({
 			<View style={{ position: 'relative' }}>
 				<TextInput
 					placeholderTextColor={ds.colors.placeholder}
+					multiline={multiline}
 					style={[
 						inputTextStyle,
 						{
-							height,
 							backgroundColor: ds.colors.inputBackground,
 							color: ds.colors.title,
 							borderColor: error ? ds.colors.error : ds.colors.border,
@@ -50,6 +51,14 @@ const CInput: React.FC<CInputProps> = ({
 							borderRadius: ds.radius.md,
 							paddingHorizontal: ds.spacing.lg,
 							paddingRight: padRight,
+							...(multiline
+								? {
+										height: height * 2.5,
+										paddingTop: ds.spacing.md,
+										paddingBottom: ds.spacing.md,
+										textAlignVertical: 'top',
+									}
+								: { height }),
 						},
 						style,
 					]}

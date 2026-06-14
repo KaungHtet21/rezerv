@@ -1,11 +1,17 @@
 import React from "react";
 import { StyleSheet } from "react-native";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "react-query";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import { NetworkBanner } from "~app/components";
+import { NetworkBannerProvider } from "~app/components";
+import { OfflineSyncProvider } from "~core/offline";
+import {
+	GlobalBottomSheetProvider,
+	GlobalBottomSheetView,
+} from "~app/layouts";
 import { DesignSyncProvider } from "~core/design";
 import RootNavigator from "~core/navigation/RootNavigator";
 import { queryClient } from "~core/server/queryClient";
@@ -20,8 +26,16 @@ const AppProviders: React.FC = () => (
           <SafeAreaProvider>
             <ThemeProvider>
               <DesignSyncProvider>
-                <RootNavigator />
-                <NetworkBanner />
+                <BottomSheetModalProvider>
+                  <GlobalBottomSheetProvider>
+                    <NetworkBannerProvider>
+                      <OfflineSyncProvider>
+                        <RootNavigator />
+                        <GlobalBottomSheetView />
+                      </OfflineSyncProvider>
+                    </NetworkBannerProvider>
+                  </GlobalBottomSheetProvider>
+                </BottomSheetModalProvider>
               </DesignSyncProvider>
             </ThemeProvider>
           </SafeAreaProvider>

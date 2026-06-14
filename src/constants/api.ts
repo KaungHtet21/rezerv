@@ -1,5 +1,5 @@
 export const SERVER = {
-	API_URL: 'http://localhost:3000',
+	API_URL: 'https://rezerv-api.onrender.com',
 };
 
 export const API = {

@@ -20,6 +20,11 @@ export type ClassesStackParamList = {
 		timeLabel: string;
 		attendanceLabel: string;
 	};
+	BookingNotes: {
+		classId: string;
+		bookingId: string;
+		attendeeName: string;
+	};
 };
 
 export type AuthStackParamList = {

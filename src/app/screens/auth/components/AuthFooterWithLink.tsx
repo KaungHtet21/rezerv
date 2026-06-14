@@ -23,14 +23,19 @@ export const AuthFooterWithLink: React.FC<AuthFooterWithLinkProps> = ({
 		<View
 			style={[
 				styles.footer,
-				{ borderTopColor: colors.border, padding: spacing.lg },
+				{
+					borderTopColor: colors.border,
+					backgroundColor: colors.background,
+					paddingHorizontal: spacing.lg,
+					paddingTop: spacing.md,
+				},
 			]}>
 			<CText variant="label" align="center">
 				{message}{' '}
 				<CText
 					variant="label"
 					weight="semiBold"
-					color={accent.primary}
+					color={accent.primary} 
 					onPress={() => navigation.navigate(navigateTo)}>
 					{linkText}
 				</CText>
@@ -43,6 +48,6 @@ const styles = StyleSheet.create({
 	footer: {
 		borderTopWidth: StyleSheet.hairlineWidth,
 		justifyContent: 'center',
-		alignItems: 'center',
+		alignItems: 'center'
 	},
 });

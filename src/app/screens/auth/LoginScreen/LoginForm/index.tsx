@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { CInput, CButton, IconComp } from '~app/common';
 import { spacing, useColors } from '~core/design';
 import { validateEmail, validatePassword } from '~core/utils/validation';
-import { useSignIn } from '~core/server/api-fetch';
+import { useSignIn } from '~core/server/mutations/auth';
 import { getApiErrorMessage, toAuthUser } from '~core/server/apis/auth';
 import { useAppDispatch } from '~core/store/hooks';
 import { loginData } from '~core/store/slices/userSlice';
